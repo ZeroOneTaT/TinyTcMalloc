@@ -109,6 +109,8 @@ inline static void* SystemAlloc(size_t kPage)
 
 基于以上的内容,我们实现了我们的定长内存池,代码和测试代码点击下方链接获取:
 
+[定长内存池模块代码](https://github.com/ZeroOneTaT/TinyMemoryPoll/blob/master/TinyMemoryPoll/MemoryPool.h)、[定长内存池模块测试代码](https://github.com/ZeroOneTaT/TinyMemoryPoll/blob/master/TinyMemoryPoll/TestMemoryPoll.cpp)
 
+测试5000000次申请和释放内存结果如下，我们可以看出，使用定长内存池的代码效率要高于new(malloc)函数:
 
-测试结果如下:
+![TestMemoryPoll.png](https://github.com/ZeroOneTaT/TinyMemoryPoll/blob/master/images/TestMemoryPoll.png?raw=true)
