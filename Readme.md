@@ -1,14 +1,16 @@
 # C++项目：TinyMemoryPoll
 
-## 项目介绍
+## 1.项目介绍
 
 本项目旨在实现一个高并发[内存池](https://so.csdn.net/so/search?q=内存池&spm=1001.2101.3001.7020)，参考了Google的开源项目[tcmalloc](https://github.com/google/tcmalloc)实现的简化版本。
 
 TinyMemoryPoll的功能主要是实现高效的多线程内存管理。由功能可知，高并发指的是高效的多线程，而内存池则是实现内存管理的。
 
+## 2.开发环境
 
+i7-4790k、Windows10专业版、Visual Studio 2022 Community
 
-## 掌握知识
+## 3.掌握知识
 
 该项目要求读者掌握**C/C++**、**数据结构（链表和哈希桶）**、操作系统中的**内存管理**、**单例设计模式**、**多线程**以及**互斥锁**相关知识。
 
@@ -39,3 +41,74 @@ TinyMemoryPoll的功能主要是实现高效的多线程内存管理。由功能
 ​	![img](https://cdn.xiaolincoding.com/gh/xiaolincoder/ImageHost/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/brk%E7%94%B3%E8%AF%B7.png)
 
 ![img](https://cdn.xiaolincoding.com/gh/xiaolincoder/ImageHost/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/brk%E7%94%B3%E8%AF%B7.png)
+
+## 4.项目思维导图
+
+
+
+## 5.整体设计
+
+### 5.1 定长内存池
+
+malloc函数适用于各种场景下的内存分配任务，但是**通用往往意味着各方面都不够完美**，比如malloc函数在频繁进行小块内存分配和释放的场景下往往会具有较高的内存调用开销和内存碎片化问题，该项目设计一个定长内存池来优化特定内存申请效率(**Note:内存池技术不适用需要大量申请大块内存的场景**)。
+
+![image-20221231222658167](https://img-blog.csdnimg.cn/img_convert/bbd073cc7724dd20913168d6426f6ce4.png)
+
+#### 适应平台的指针方案
+
+本项目需要选取一块对象内存的前n个内存(32位系统n=4，64位系统n=8)来存放指向下一块释放回来的自由对象内存的指针，为了实现代码的平台通用性，我们可以将对象内存强制转换成**void****类型，再对这个二级指针解引用即可取出我们需要的当前对象内存的前n个内存。该技巧的核心思想是利用编译器对不同类型在内存中占据空间的大小进行处理，对象内存的地址强制类型转换成**void****类型，这样就相当于把该对象的地址存放在了一个8个字节（64位系统）或者4个字节（32位系统）的内存单元中。
+
+该操作在本项目中会被频繁使用，为了提高调用执行效率，将其封装成[内联函数](https://www.runoob.com/cplusplus/cpp-inline-functions.html)方便调用：
+
+```c++
+// 内存指针转换 4/32位 8/32位
+static inline void*& NextObj(void* obj) {
+	return *(void**)obj;
+}
+```
+
+C/C++中申请内存一般使用malloc/new，本项目为了脱离使用malloc函数，直接将Windows操作系统提供的虚拟内存申请系统调用函数VirtualAlloc封装成自己的内存申请函数：
+
+```c++
+// 自定义内存申请函数
+inline static void* SystemAlloc(size_t kPage)
+{
+	#ifdef _WIN32
+		void* ptr = VirtualAlloc(0, kPage << PAGE_SHIFT, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+	#else
+		//Linux下brk mmap等
+	#endif // _WIN32
+
+	//抛出异常
+	if (ptr == nullptr)
+		throw std::bad_alloc();
+
+	return ptr;
+}
+```
+
+简单介绍一下VirtualAlloc函数：
+
+>```c++
+>LPVOID VirtualAlloc(
+>  LPVOID lpAddress,
+>  SIZE_T dwSize,
+>  DWORD  flAllocationType,
+>  DWORD  flProtect
+>);
+>```
+>
+>其中：
+>
+>- lpAddress：指定欲保留或提交页面的起始地址。如果为0，则表示让系统决定；如果非0，则要求系统从这个地址开始分配给这个进程。
+>- dwSize：欲提交或保留的内存大小，单位是字节。
+>- flAllocationType：内存分配类型标志位，包含以下几个值之一：
+>  - MEM_COMMIT：提交已经被保留的内存页，此时内存内容已经被清空。
+>  - MEM_RESERVE：保留指定大小的虚拟地址空间而不进行物理存储分配。一旦保留了地址空间，就可以在后续的操作中执行提交操作（即将保留的内存页提交，使其与物理存储关联），也可以取消保留操作，释放掉相应的地址空间。
+>- flProtect：要应用于保留或提交的内存页所需的访问权限和页面属性（例如读、写、执行等），支持一系列参数，如 PAGE_READWRITE 表示可读可写，PAGE_EXECUTE 表示可执行，PAGE_EXECUTE_READ 表示可读可执行等。
+
+基于以上的内容,我们实现了我们的定长内存池,代码和测试代码点击下方链接获取:
+
+
+
+测试结果如下:
