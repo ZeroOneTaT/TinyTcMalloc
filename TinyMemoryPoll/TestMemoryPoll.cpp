@@ -55,9 +55,10 @@ void TestMemPool()
 }
 
 
-
+/*
 int main() 
 {
 	TestMemPool();
 	return 0;
 }
+*/
