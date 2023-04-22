@@ -56,6 +56,8 @@ public:
 		NextObj(obj) = _freeList;
 		_freeList = obj;
 	}
+
+
 private:
 	char* _memory = nullptr;		// 指向申请的大块内存的指针
 	void* _freeList = nullptr;		// 自由链表的头指针，保存当前可以被重复利用的对象
