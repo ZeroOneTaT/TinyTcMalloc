@@ -20,10 +20,10 @@ static void* TcMalloc(size_t size)
 		size_t alignSize = SizeClass::RoundUp(size);
 		size_t kPage = alignSize >> PAGE_SHIFT;
 
-		PageCache::GetInstance()->_pageMtx.lock();
+		PageCache::GetInstance()->lock();
 		Span* span = PageCache::GetInstance()->NewSpan(kPage);
 		span->_objSize = alignSize;
-		PageCache::GetInstance()->_pageMtx.unlock();
+		PageCache::GetInstance()->unlock();
 
 		void* ptr = (void*)(span->_pageID << PAGE_SHIFT);
 		return ptr;
@@ -54,9 +54,9 @@ static void TcFree(void* ptr)
 	// 大于256k内存，直接释放给PageCache
 	if (size > MAX_BYTES)
 	{
-		PageCache::GetInstance()->_pageMtx.lock();
+		PageCache::GetInstance()->lock();
 		PageCache::GetInstance()->ReleaseSpanToPageCache(span);
-		PageCache::GetInstance()->_pageMtx.unlock();
+		PageCache::GetInstance()->unlock();
 	}
 	// 较小内存，走三级缓存
 	else

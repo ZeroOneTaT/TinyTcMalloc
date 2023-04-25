@@ -23,13 +23,12 @@ public:
 	// 申请k页的span
 	Span* NewSpan(size_t k);
 
-	/*void lock() { _pageMtx.lock(); }
-	void unlock() { _pageMtx.unlock(); }*/
+	void lock() { _pageMtx.lock(); }
+	void unlock() { _pageMtx.unlock(); }
 
-public:
-	std::mutex _pageMtx;							// 锁
-	
 private:
+	std::mutex _pageMtx;							// 锁
+
 	static PageCache _sInst;
 
 	SpanList _spanlists[NPAGES];					//	PageCache的双链表哈希桶，直接按页数映射

@@ -314,6 +314,6 @@ public:
 
 private:
 	Span* _head;		// 链表的头指针
-public:
+
 	std::mutex _mtx;	// 桶锁,保持线程安全
 };
