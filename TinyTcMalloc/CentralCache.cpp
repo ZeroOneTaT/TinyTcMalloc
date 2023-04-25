@@ -17,15 +17,15 @@ Span* CentralCache::GetOneSpan(SpanList& list, size_t size)
 	}
 
 	// 解锁，方便其他线程释放对象
-	// list.unlock();
-	list._mtx.unlock();
+	list.unlock();
+	
 
 	// 无空闲Span，向PageCache申请
-	PageCache::GetInstance()->_pageMtx.lock();
+	PageCache::GetInstance()->lock();
 	Span* span = PageCache::GetInstance()->NewSpan(SizeClass::NumMovePage(size));
 	span->_isUsed = true;
 	span->_objSize = size;
-	PageCache::GetInstance()->_pageMtx.unlock();
+	PageCache::GetInstance()->unlock();
 
 	// 对新获取span切分，无需加锁，单例模式，其余线程无法访问该span
 
@@ -49,8 +49,8 @@ Span* CentralCache::GetOneSpan(SpanList& list, size_t size)
 	NextObj(tail) = nullptr;
 
 	// 切分span后，加锁挂载到CentralCache对应的哈希桶中
-	//list.lock();
-	list._mtx.lock();
+	list.lock();
+
 	list.PushFront(span);
 
 	return span;
@@ -62,8 +62,8 @@ size_t CentralCache::FetchRangeObjToThread(void*& start, void*& end, size_t batc
 	// CentralCache哈希桶的映射规则和ThreadCache哈希桶映射规则一致
 	size_t index = SizeClass::Index(size);
 	// 加锁
-	// _spanlists[index].lock();
-	_spanlists[index]._mtx.lock();
+	_spanlists[index].lock();
+	
 	Span* span = GetOneSpan(_spanlists[index], size);
 	assert(span);					// 检查获取的span是否为空
 	assert(span->_freeList);		// 检查获取的span的自由链表是否为空
@@ -85,8 +85,8 @@ size_t CentralCache::FetchRangeObjToThread(void*& start, void*& end, size_t batc
 	span->_usedCount += actualNum;
 
 	// 解锁
-	// _spanlists[index].unlock();
-	_spanlists[index]._mtx.unlock();
+	_spanlists[index].unlock();
+	
 	return actualNum;
 }
 
@@ -96,8 +96,7 @@ void CentralCache::ReleaseListToSpans(void* start, size_t size)
 	// 根据start查询对应的span
 	size_t index = SizeClass::Index(size);
 
-	//_spanlists[index].lock();
-	_spanlists[index]._mtx.lock();
+	_spanlists[index].lock();
 	
 	while (start)
 	{
@@ -121,18 +120,15 @@ void CentralCache::ReleaseListToSpans(void* start, size_t size)
 
 			// 释放span给page cache时，span已经从_spanLists[index]删除了，不需要再加桶锁了
 			// 这时把桶锁解掉，使用page cache的锁就可以了,方便其他线程申请/释放内存
-			//_spanlists[index].unlock();
-			_spanlists[index]._mtx.unlock();
+			_spanlists[index].unlock();
 
-			PageCache::GetInstance()->_pageMtx.lock();
+			PageCache::GetInstance()->lock();
 			PageCache::GetInstance()->ReleaseSpanToPageCache(span);
-			PageCache::GetInstance()->_pageMtx.unlock();
+			PageCache::GetInstance()->unlock();
 
-			//_spanlists[index].lock();
-			_spanlists[index]._mtx.lock();
+			_spanlists[index].lock();
 		}
 		start = next;
 	}
-	//_spanlists[index].unlock();
-	_spanlists[index]._mtx.unlock();
+	_spanlists[index].unlock();
 }
