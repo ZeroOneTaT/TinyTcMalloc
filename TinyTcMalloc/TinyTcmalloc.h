@@ -38,7 +38,7 @@ static void* TcMalloc(size_t size)
 			pTLSThreadCache = tcPool.New();
 		}
 
-		 cout << std::this_thread::get_id() << ":" << pTLSThreadCache << endl;
+		 //cout << std::this_thread::get_id() << ":" << pTLSThreadCache << endl;
 
 		// 调用该线程的ThreadCache对象的Allocate函数申请内存
 		return pTLSThreadCache->Allocate(size);

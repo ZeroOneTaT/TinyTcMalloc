@@ -119,12 +119,14 @@ void TestBigMemory()
 	TcFree(ptr2);
 }
 
-int main()
-{
-	//TestMemoryPool();
-	//TestThreads();
-	TestSizeClass();
-	//TestMallocAndFree();
-	//TestBigMemory();
-	return 0;
-}
+
+//
+//int main()
+//{
+//	//TestMemoryPool();
+//	//TestThreads();
+//	TestSizeClass();
+//	//TestMallocAndFree();
+//	//TestBigMemory();
+//	return 0;
+//}
