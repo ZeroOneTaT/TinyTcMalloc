@@ -125,25 +125,25 @@ PageCache使用STL容器中的unordered_map来构建`<_pageID，span>`映射时�
 
 1.点击vs工具栏的`调试`，打开该工具目录下的`性能探查器`
 
-![](D:\ZeroOne\文档\学习\开发\TinyTcMalloc\images\Analysis0.png)
+![A0](https://github.com/ZeroOneTaT/TinyMemoryPoll/blob/master/images/Analysis0.png?raw=true)
 
 2.选择`性能探查器`下的`检测`选项，以监测应用程序相关函数的调用次数和调用时间，并点击下方的`开始`，开始监测
 
-![](D:\ZeroOne\文档\学习\开发\TinyTcMalloc\images\Analysis1.png)
+![A1](https://github.com/ZeroOneTaT/TinyMemoryPoll/blob/master/images/Analysis1.png?raw=true)
 
 3.等待监测运行结果并分析
 
-![](D:\ZeroOne\文档\学习\开发\TinyTcMalloc\images\Analysis2.png)
+![A2](https://github.com/ZeroOneTaT/TinyMemoryPoll/blob/master/images/Analysis2.png?raw=true)
 
-![](D:\ZeroOne\文档\学习\开发\TinyTcMalloc\images\Analysis3.png)
+![A3](https://github.com/ZeroOneTaT/TinyMemoryPoll/blob/master/images/Analysis3.png?raw=true)
 
-![](D:\ZeroOne\文档\学习\开发\TinyTcMalloc\images\Anaysis4.png)
+![A4](https://github.com/ZeroOneTaT/TinyMemoryPoll/blob/master/images/Anaysis4.png?raw=true)
 
-![](D:\ZeroOne\文档\学习\开发\TinyTcMalloc\images\Analysis5.png)
+![A5](https://github.com/ZeroOneTaT/TinyMemoryPoll/blob/master/images/Analysis5.png?raw=true)
 
-![](D:\ZeroOne\文档\学习\开发\TinyTcMalloc\images\Analysis6.png)
+![A6](https://github.com/ZeroOneTaT/TinyMemoryPoll/blob/master/images/Analysis6.png?raw=true)
 
-![](D:\ZeroOne\文档\学习\开发\TinyTcMalloc\images\Analysis7.png)
+![A7](https://github.com/ZeroOneTaT/TinyMemoryPoll/blob/master/images/Analysis7.png?raw=true)
 
 4.通过解析程序的执行过程，我们发现，为了保证操作的原子性，项目在`unordered_map<PAGE_ID, Span*> _idSpanMap`中的锁竞争上浪费了大量性能，这主要是因为unordered_map是线程不安全的，因此多线程下使用时需要加锁，防止使用`<_pageID，span>`映射时其他线程对映射造成修改，改变哈希桶结构而造成数据不一致，而`<_pageID，span>`映射会被多次使用到，大量加锁、解锁操作会导致资源的消耗。
 
