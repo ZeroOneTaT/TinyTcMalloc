@@ -114,3 +114,39 @@ inline static void* SystemAlloc(size_t kPage)
 测试5000000次申请和释放内存结果如下，我们可以看出，使用定长内存池的代码效率要高于new(malloc)函数:
 
 ![TestMemoryPoll.png](https://github.com/ZeroOneTaT/TinyMemoryPoll/blob/master/images/TestMemoryPoll.png?raw=true)
+
+## 6.性能优化
+
+PageCache使用STL容器中的unordered_map来构建`<_pageID，span>`映射时，我们发现`TcMalloc`内存池的内存分配和释放效率要低于直接使用`malloc`和`free`函数，使用`4`个线程并发执行`10`轮，每轮执行申请并释放`10000`次（执行过程：申请16->申请1024->释放16->释放1024）进行性能测试，测试结果如下图所示：
+
+![BenchmarkWithMap](D:\ZeroOne\文档\学习\开发\TinyTcMalloc\images\BenchmarkWithMap.png)
+
+### 性能瓶颈分析
+
+1.点击vs工具栏的`调试`，打开该工具目录下的`性能探查器`
+
+![](D:\ZeroOne\文档\学习\开发\TinyTcMalloc\images\Analysis0.png)
+
+2.选择`性能探查器`下的`检测`选项，以监测应用程序相关函数的调用次数和调用时间，并点击下方的`开始`，开始监测
+
+![](D:\ZeroOne\文档\学习\开发\TinyTcMalloc\images\Analysis1.png)
+
+3.等待监测运行结果并分析
+
+![](D:\ZeroOne\文档\学习\开发\TinyTcMalloc\images\Analysis2.png)
+
+![](D:\ZeroOne\文档\学习\开发\TinyTcMalloc\images\Analysis3.png)
+
+![](D:\ZeroOne\文档\学习\开发\TinyTcMalloc\images\Anaysis4.png)
+
+![](D:\ZeroOne\文档\学习\开发\TinyTcMalloc\images\Analysis5.png)
+
+![](D:\ZeroOne\文档\学习\开发\TinyTcMalloc\images\Analysis6.png)
+
+![](D:\ZeroOne\文档\学习\开发\TinyTcMalloc\images\Analysis7.png)
+
+4.通过解析程序的执行过程，我们发现，为了保证操作的原子性，项目在`unordered_map<PAGE_ID, Span*> _idSpanMap`中的锁竞争上浪费了大量性能，这主要是因为unordered_map是线程不安全的，因此多线程下使用时需要加锁，防止使用`<_pageID，span>`映射时其他线程对映射造成修改，改变哈希桶结构而造成数据不一致，而`<_pageID，span>`映射会被多次使用到，大量加锁、解锁操作会导致资源的消耗。
+
+### 性能优化方案
+
+为了突破`<_pageID，span>`映射大量锁操作带来的性能瓶颈，本项目参考google开源的tcmalloc，使用基数树进行优化。对基数树还不了解的小伙伴可以先看这篇博客：[图解基数树(RadixTree)](https://blog.csdn.net/qq_41583040/article/details/130416816)。
