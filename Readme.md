@@ -1,10 +1,12 @@
-# C++项目：TinyMemoryPoll
+# TinyTcMalloc
+
+[TOC]
 
 ## 1.项目介绍
 
 本项目旨在实现一个高并发[内存池](https://so.csdn.net/so/search?q=内存池&spm=1001.2101.3001.7020)，参考了Google的开源项目[tcmalloc](https://github.com/google/tcmalloc)实现的简化版本。
 
-TinyMemoryPoll的功能主要是实现高效的多线程内存管理。由功能可知，高并发指的是高效的多线程，而内存池则是实现内存管理的。
+TinyTcMalloc的功能主要是实现高效的多线程内存管理。由功能可知，高并发指的是高效的多线程，而内存池则是实现内存管理的。
 
 ## 2.开发环境
 
@@ -109,11 +111,11 @@ inline static void* SystemAlloc(size_t kPage)
 
 基于以上的内容,我们实现了我们的定长内存池,代码和测试代码点击下方链接获取:
 
-[定长内存池模块代码](https://github.com/ZeroOneTaT/TinyMemoryPoll/blob/master/TinyMemoryPoll/MemoryPool.h)、[定长内存池模块测试代码](https://github.com/ZeroOneTaT/TinyMemoryPoll/blob/master/TinyMemoryPoll/TestMemoryPoll.cpp)
+[定长内存池模块代码](https://github.com/ZeroOneTaT/TinyTcMalloc/blob/master/TinyTcMalloc/MemoryPool.h)、[定长内存池模块测试代码](https://github.com/ZeroOneTaT/TinyTcMalloc/blob/master/TinyTcMalloc/TestMemoryPoll.cpp)
 
 测试5000000次申请和释放内存结果如下，我们可以看出，使用定长内存池的代码效率要高于new(malloc)函数:
 
-![TestMemoryPoll.png](https://github.com/ZeroOneTaT/TinyMemoryPoll/blob/master/images/TestMemoryPoll.png?raw=true)
+![TestMemoryPoll.png](https://github.com/ZeroOneTaT/TinyTcMalloc/blob/master/images/TestMemoryPoll.png?raw=true)
 
 ## 6.性能优化
 
@@ -125,28 +127,48 @@ PageCache使用STL容器中的unordered_map来构建`<_pageID，span>`映射时�
 
 1.点击vs工具栏的`调试`，打开该工具目录下的`性能探查器`
 
-![A0](https://github.com/ZeroOneTaT/TinyMemoryPoll/blob/master/images/Analysis0.png?raw=true)
+![A0](https://github.com/ZeroOneTaT/TinyTcMalloc/blob/master/images/Analysis0.png?raw=true)
 
 2.选择`性能探查器`下的`检测`选项，以监测应用程序相关函数的调用次数和调用时间，并点击下方的`开始`，开始监测
 
-![A1](https://github.com/ZeroOneTaT/TinyMemoryPoll/blob/master/images/Analysis1.png?raw=true)
+![A1](https://github.com/ZeroOneTaT/TinyTcMalloc/blob/master/images/Analysis1.png?raw=true)
 
 3.等待监测运行结果并分析
 
-![A2](https://github.com/ZeroOneTaT/TinyMemoryPoll/blob/master/images/Analysis2.png?raw=true)
+![A2](https://github.com/ZeroOneTaT/TinyTcMalloc/blob/master/images/Analysis2.png?raw=true)
 
-![A3](https://github.com/ZeroOneTaT/TinyMemoryPoll/blob/master/images/Analysis3.png?raw=true)
+![A3](https://github.com/ZeroOneTaT/TinyTcMalloc/blob/master/images/Analysis3.png?raw=true)
 
-![A4](https://github.com/ZeroOneTaT/TinyMemoryPoll/blob/master/images/Anaysis4.png?raw=true)
+![A4](https://github.com/ZeroOneTaT/TinyTcMalloc/blob/master/images/Anaysis4.png?raw=true)
 
-![A5](https://github.com/ZeroOneTaT/TinyMemoryPoll/blob/master/images/Analysis5.png?raw=true)
+![A5](https://github.com/ZeroOneTaT/TinyTcMalloc/blob/master/images/Analysis5.png?raw=true)
 
-![A6](https://github.com/ZeroOneTaT/TinyMemoryPoll/blob/master/images/Analysis6.png?raw=true)
+![A6](https://github.com/ZeroOneTaT/TinyTcMalloc/blob/master/images/Analysis6.png?raw=true)
 
-![A7](https://github.com/ZeroOneTaT/TinyMemoryPoll/blob/master/images/Analysis7.png?raw=true)
+![A7](https://github.com/ZeroOneTaT/TinyTcMalloc/blob/master/images/Analysis7.png?raw=true)
 
 4.通过解析程序的执行过程，我们发现，为了保证操作的原子性，项目在`unordered_map<PAGE_ID, Span*> _idSpanMap`中的锁竞争上浪费了大量性能，这主要是因为unordered_map是线程不安全的，因此多线程下使用时需要加锁，防止使用`<_pageID，span>`映射时其他线程对映射造成修改，改变哈希桶结构而造成数据不一致，而`<_pageID，span>`映射会被多次使用到，大量加锁、解锁操作会导致资源的消耗。
 
 ### 性能优化方案
 
 为了突破`<_pageID，span>`映射大量锁操作带来的性能瓶颈，本项目参考google开源的tcmalloc，使用基数树进行优化。对基数树还不了解的小伙伴可以先看这篇博客：[图解基数树(RadixTree)](https://blog.csdn.net/qq_41583040/article/details/130416816)。
+
+**`使用基数树为什么可以不用加锁？`**
+
+> 之前使用unordered_map时可能有的线程在建立映射，有的线程在使用MapToSpan()进行读取（必须加锁）
+>
+> - 若使用set，底层是红黑树：遍历时如果正好在进行旋转(左右旋)，映射关系发生变化，出错
+> - 若使用unordered_map, 底层是哈希桶，遍历时刚好在进行扩容或插入删除，桶也变了，错误
+>
+> 而使用基数树：
+>
+> - 插入时不会动结构，在写之前会提前开好空间（红黑树或哈希桶会动结构）
+> - 只有两个函数`FetchNewSpan`和`ReleaseSpanToPageCache`会使用_pageMap建立映射,多个线程不可能对同一个位置进行写（调用这两个函数时已加锁）
+> - 读写是分离的，不可能读的时候在写
+
+### 优化结果
+
+由于项目使用的环境是32位编译系统，故只需要使用一层/两层基数树进行映射，只有在64位系统下才需要使用三层基数树，分别测试一层/两层基数树优化后的结果。
+
+使用`4`个线程并发执行`10`轮，每轮执行申请并释放`2000`次（执行过程：申请16->申请65\*1024->释放16->释放65\*1024）进行性能测试，测试结果如下图所示：
+
