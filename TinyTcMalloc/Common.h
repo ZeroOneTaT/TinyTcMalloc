@@ -22,6 +22,7 @@ using std::endl;
 	typedef unsigned long long PAGE_ID;
 #elif _WIN32
 	typedef size_t PAGE_ID;
+	const size_t MAXBITS = 32;
 #else
 	//Linux
 #endif

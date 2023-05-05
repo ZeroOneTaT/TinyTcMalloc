@@ -26,9 +26,9 @@ public:
 			//当前内存池中没有足以分配的内存，需要申请
 			if (_remaineBytes < sizeof(T))
 			{
-				_remaineBytes = 8 * 1024;
-				//_memory = (char*)malloc(_remaineBytes);//申请定长（8Kb）的内存空间
-				_memory = (char*)SystemAlloc(_remaineBytes >> PAGE_SHIFT);//申请定长（8Kb）的内存空间
+				_remaineBytes = 64 * 1024;
+				//_memory = (char*)malloc(_remaineBytes);//申请定长（64Kb）的内存空间
+				_memory = (char*)SystemAlloc(_remaineBytes >> PAGE_SHIFT);//申请定长（64Kb）的内存空间
 				
 				if (_memory == nullptr)
 				{

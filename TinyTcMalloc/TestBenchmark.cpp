@@ -1,5 +1,5 @@
 #include "TinyTcmalloc.h"
-
+#include <string>
 /*
 	内存池压力测试文件
 */
@@ -39,7 +39,7 @@ void BenchmarkMalloc(size_t nworkers, size_t rounds, size_t ntimes)
 					size_t s_malloc2 = clock();
 					for (size_t i = 0; i < ntimes; i++)
 					{
-						v2.push_back(malloc(1024));
+						v2.push_back(malloc(65 * 1024));
 					}
 					size_t e_malloc2 = clock();
 
@@ -122,7 +122,7 @@ void BenchmarkTcMalloc(size_t nworkers, size_t rounds, size_t ntimes)
 					size_t s_malloc2 = clock();
 					for (size_t i = 0; i < ntimes; i++)
 					{
-						v2.push_back(TcMalloc(1024));
+						v2.push_back(TcMalloc(65 * 1024));
 					}
 					size_t e_malloc2 = clock();
 
@@ -174,10 +174,12 @@ int main()
 {
 	size_t nworkers = 4;
 	size_t rounds = 10;
-	size_t ntimes = 10000;
+	size_t ntimes = 2000;
+	
 	cout << "==========================================================" << endl;
 	BenchmarkMalloc(nworkers, rounds, ntimes);
 	cout << endl << endl;
+	
 	cout << "==========================================================" << endl;
 	BenchmarkTcMalloc(nworkers, rounds, ntimes);
 	cout << "==========================================================" << endl;

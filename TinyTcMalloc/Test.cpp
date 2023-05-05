@@ -117,16 +117,17 @@ void TestBigMemory()
 	//也有可能申请的是一块大于128页的内存
 	void* ptr2 = TcMalloc(129 * 4 * 1024);
 	TcFree(ptr2);
+	cout << "大内存申请、释放成功！" << endl;
 }
 
 
-//
+
 //int main()
 //{
 //	//TestMemoryPool();
 //	//TestThreads();
-//	TestSizeClass();
+//	//TestSizeClass();
 //	//TestMallocAndFree();
-//	//TestBigMemory();
+//	TestBigMemory();
 //	return 0;
 //}
