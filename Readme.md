@@ -172,3 +172,36 @@ PageCache使用STL容器中的unordered_map来构建`<_pageID，span>`映射时�
 
 使用`4`个线程并发执行`10`轮，每轮执行申请并释放`2000`次（执行过程：申请16->申请65\*1024->释放16->释放65\*1024）进行性能测试，测试结果如下图所示：
 
+- 单层基数树优化结果
+
+![](https://github.com/ZeroOneTaT/TinyTcMalloc/blob/master/images/Result1.png?raw=true)
+
+- 二层基数树优化结果
+
+![](https://github.com/ZeroOneTaT/TinyTcMalloc/blob/master/images/Result2.png?raw=true)
+
+可以看到，使用基数树优化`<_pageID，span>`映射后，我们项目的内存使用效率要明显优于`malloc&free`，大概在其五倍左右。
+
+## 7.项目打包
+
+- 右键点击项目属性
+
+![](https://github.com/ZeroOneTaT/TinyTcMalloc/blob/master/images/lib1.png?raw=true)
+
+- 选择输出位`.lib`文件
+
+![](https://github.com/ZeroOneTaT/TinyTcMalloc/blob/master/images/lib2.png?raw=true)
+
+- 重新生成项目解决方案
+
+![](https://github.com/ZeroOneTaT/TinyTcMalloc/blob/master/images/lib3.png?raw=true)
+
+- 作者已经将项目头文件和响应的`.lib`文件打包到`TcMalloc`文件夹，只需要将`TcMalloc`文件夹添加到你想添加的项目文件下，将其包含在库文件目录下并包含对应的静态文件库即可使用
+
+![](https://github.com/ZeroOneTaT/TinyTcMalloc/blob/master/images/lib4.png?raw=true)
+
+![](https://github.com/ZeroOneTaT/TinyTcMalloc/blob/master/images/lib5.png?raw=true)
+
+- 以下是一个简单的使用示例。
+
+![](https://github.com/ZeroOneTaT/TinyTcMalloc/blob/master/images/lib6.png?raw=true)
