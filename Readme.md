@@ -121,7 +121,7 @@ inline static void* SystemAlloc(size_t kPage)
 
 PageCache使用STL容器中的unordered_map来构建`<_pageID，span>`映射时，我们发现`TcMalloc`内存池的内存分配和释放效率要低于直接使用`malloc`和`free`函数，使用`4`个线程并发执行`10`轮，每轮执行申请并释放`10000`次（执行过程：申请16->申请1024->释放16->释放1024）进行性能测试，测试结果如下图所示：
 
-![BenchmarkWithMap](D:\ZeroOne\文档\学习\开发\TinyTcMalloc\images\BenchmarkWithMap.png)
+![](https://github.com/ZeroOneTaT/TinyTcMalloc/blob/master/images/BenchmarkWithMap.png?raw=true)
 
 ### 性能瓶颈分析
 
